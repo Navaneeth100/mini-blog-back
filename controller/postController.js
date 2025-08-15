@@ -35,12 +35,54 @@ const listPosts = async (req, res) => {
   }
 };
 
+//  Get User Wise Created Post
+
+const getMyPosts = async (req, res) => {
+  try {
+    const { page = 1, search = "" } = req.query;
+    const limit = 10; 
+    const skip = (Number(page) - 1) * limit;
+
+    const filter = {
+      author: req.userId,
+      ...(search ? { title: { $regex: search, $options: "i" } } : {}),
+    };
+
+    const [results, total] = await Promise.all([
+      Post.find(filter)
+        .populate("author", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Post.countDocuments(filter),
+    ]);
+
+    // Add full URL for images directly from post.image
+
+    const host = req.protocol + "://" + req.get("host");
+    const postsWithFullUrl = results.map(post => ({
+      ...post.toObject(),
+      image: post.image ? host + post.image : null,
+    }));
+
+    res.status(200).json({
+      success: true,
+      results: postsWithFullUrl,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Server error", details: err.message });
+  }
+};
+
 // Get Single Post
 
 const getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate(
-      "author", 
+      "author",
       "name email"
     );
     if (!post) return res.status(404).json({ error: "Not found" });
@@ -65,7 +107,7 @@ const createPost = async (req, res) => {
 
     const imagePath = req.file ? "/uploads/" + req.file.filename : null;
 
-    const post = await Post.create({ title, content, author: req.userId,image: imagePath });
+    const post = await Post.create({ title, content, author: req.userId, image: imagePath });
     res.status(201).json({ message: "Post Created Successfully", post });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
@@ -110,6 +152,7 @@ const deletePost = async (req, res) => {
 module.exports = {
   listPosts,
   getPost,
+  getMyPosts,
   createPost,
   updatePost,
   deletePost,

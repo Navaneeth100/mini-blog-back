@@ -3,14 +3,20 @@ const router = express.Router();
 
 const {
   listPosts,
+  getMyPosts,
   getPost,
   createPost,
   updatePost,
   deletePost
 } = require("../controller/postController.js");
 
-const { authMiddleware } = require("../middleware/auth.js");
+const { authMiddleware , verifyToken } = require("../middleware/auth.js");
 const upload = require("../middleware/multer");
+
+// Special routes 
+
+router.get("/my-posts", verifyToken, getMyPosts);
+
 
 // Public
 

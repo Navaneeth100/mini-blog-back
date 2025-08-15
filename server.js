@@ -11,7 +11,12 @@ const app = express();
 
 // CORS allowed origins
 
-const allowedOrigins = ["http://localhost:5173"];
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://miniblog-frontend.vercel.app'
+];
+
 app.use(
   cors({
     origin: allowedOrigins,
