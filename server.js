@@ -32,6 +32,10 @@ mongoose
 app.use("/api", authRoutes);
 app.use("/api/posts", postRoutes);
 
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 // Test route
 
 app.get("/", (req, res) => {
@@ -40,7 +44,7 @@ app.get("/", (req, res) => {
 
 // Start server
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5004;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );

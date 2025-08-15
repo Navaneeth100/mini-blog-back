@@ -10,6 +10,7 @@ const {
 } = require("../controller/postController.js");
 
 const { authMiddleware } = require("../middleware/auth.js");
+const upload = require("../middleware/multer");
 
 // Public
 
@@ -18,8 +19,8 @@ router.get("/:id", getPost);
 
 // Private
 
-router.post("/", authMiddleware, createPost);
-router.put("/:id", authMiddleware, updatePost);
+router.post("/", authMiddleware, upload.single("image"), createPost);
+router.put("/:id", authMiddleware, upload.single("image"), updatePost);
 router.delete("/:id", authMiddleware, deletePost);
 
 module.exports = router;

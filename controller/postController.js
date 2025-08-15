@@ -3,7 +3,7 @@ const Post = require("../models/Post.js");
 const listPosts = async (req, res) => {
   try {
     const { page = 1, search = "" } = req.query;
-    const limit = 10; // Fixed limit value
+    const limit = 10;
     const filter = search ? { title: { $regex: search, $options: "i" } } : {};
     const skip = (Number(page) - 1) * limit;
 
@@ -16,8 +16,16 @@ const listPosts = async (req, res) => {
       Post.countDocuments(filter),
     ]);
 
+    // Add full URL for image
+
+    const host = req.protocol + "://" + req.get("host");
+    const postsWithFullUrl = results.map(post => ({
+      ...post.toObject(),
+      image: post.image ? host + post.image : null,
+    }));
+
     res.json({
-      results,
+      results: postsWithFullUrl,
       total,
       page: Number(page),
       pages: Math.ceil(total / limit),
@@ -27,15 +35,23 @@ const listPosts = async (req, res) => {
   }
 };
 
+// Get Single Post
 
 const getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate(
-      "author",
+      "author", 
       "name email"
     );
     if (!post) return res.status(404).json({ error: "Not found" });
-    res.json(post);
+
+    const host = req.protocol + "://" + req.get("host");
+    const postWithFullUrl = {
+      ...post.toObject(),
+      image: post.image ? host + post.image : null,
+    };
+
+    res.json(postWithFullUrl);
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
@@ -46,8 +62,11 @@ const createPost = async (req, res) => {
     const { title, content } = req.body;
     if (!title || !content)
       return res.status(400).json({ error: "Title and content required" });
-    const post = await Post.create({ title, content, author: req.userId });
-    res.status(201).json(post);
+
+    const imagePath = req.file ? "/uploads/" + req.file.filename : null;
+
+    const post = await Post.create({ title, content, author: req.userId,image: imagePath });
+    res.status(201).json({ message: "Post Created Successfully", post });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
@@ -62,8 +81,13 @@ const updatePost = async (req, res) => {
 
     post.title = req.body.title ?? post.title;
     post.content = req.body.content ?? post.content;
+
+    if (req.file) {
+      post.image = req.file ? "/uploads/" + req.file.filename : null;
+    }
+
     await post.save();
-    res.json(post);
+    res.status(201).json({ message: "Post Updated Successfully", post });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
